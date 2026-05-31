@@ -27,6 +27,8 @@ local function beltEntry(): Vector3
 end
 
 local function startRide(bag: BasePart, state: rideState)
+	local fwd = conveyerRefs.forward()
+
 	state.phase = "ride"
 	state.rideDist = (bag.Position - beltEntry()):Dot(fwd)
 

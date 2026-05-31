@@ -6,41 +6,30 @@ local remotes = require(game.ReplicatedStorage.Shared.remotes)
 local bagFactory = require(script.Parent.bagFactory)
 local bagsFolder = require(script.Parent.bagsFolder)
 local bagMotion = require(script.Parent.bagMotion)
-local bagSpawnAnim = require(script.Parent.bagSpawnAnim)
 
 local bagSpawner = {}
 
-local targetBagSize = Vector3.new(2.2, 2.2, 2.2)
-local running = false
+local loopOn = false
 
-local function canSpawnMore(): boolean
+local function roomLeft(): boolean
 	return bagsFolder.count() < config.maxBags
 end
 
-local function finishBag(bag: BasePart)
-	bagMotion.fadeOut(bag, function()
-		bag:Destroy()
-	end)
-end
-
-local function startBagTrip(bag: BasePart)
-	bagMotion.runAlong(bag, function()
-		finishBag(bag)
-	end)
-end
-
 function bagSpawner.spawnOne()
-	if not canSpawnMore() then
+	if not roomLeft() then
 		return
 	end
 
 	local bag = bagFactory.create(bagsFolder.get())
-	bagSpawnAnim.play(bag, targetBagSize, function()
-		startBagTrip(bag)
+
+	bagMotion.dropAndRide(bag, function()
+		if bag.Parent then
+			bag:Destroy()
+		end
 	end)
 end
 
-local function waitInterval()
+local function waitTick()
 	local t = remotes.spawnInterval.Value
 	if t < 0.15 then
 		t = 0.15
@@ -48,18 +37,20 @@ local function waitInterval()
 	task.wait(t)
 end
 
-function bagSpawner.startLoop()
-	if running then
+function bagSpawner.start()
+	if loopOn then
 		return
 	end
-	running = true
+	loopOn = true
+
+	bagsFolder.clear()
 
 	task.spawn(function()
 		bagSpawner.spawnOne()
 
-		while running do
-			waitInterval()
-			if canSpawnMore() then
+		while loopOn do
+			waitTick()
+			if roomLeft() then
 				bagSpawner.spawnOne()
 			end
 		end
